@@ -1,0 +1,8 @@
+.gdbinit
+bootimage.bin
+Cargo.lock
+target/
+*.swp
+
+# Rust
+*.bk

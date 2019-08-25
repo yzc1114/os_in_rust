@@ -1,0 +1,30 @@
+[package]
+name = "ryzc"
+version = "0.1.0"
+authors = [ "robert.w.gries@gmail.com" ]
+license = "MIT OR Apache-2.0"
+edition = "2018"
+
+[dependencies]
+bit_field = "0.7.0"
+bitflags = "1.0.1"
+bootloader= { version = "0.5.0", features = ["map_physical_memory"]}
+linked_list_allocator = "0.6.0"
+rlibc = "1.0.0"
+spin = "0.4.6"
+volatile = "0.1.0"
+x86_64 = "0.5.2"
+#slice_cast = "0.1.2"
+#fatfs = { version = "0.3", features = ["core_io"], default-features = false }
+
+[dependencies.lazy_static]
+version = "1.0.1"
+features = ["spin_no_std"]
+
+[features]
+default = ["serial", "vga"]
+serial = []
+vga = []
+
+[package.metadata.bootimage]
+default-target = "x86_64-ryzc.json"
