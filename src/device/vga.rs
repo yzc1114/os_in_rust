@@ -11,7 +11,7 @@ const MAX_WIDTH: usize = 80;
 pub static VGA: IrqLock<Writer> = IrqLock::new(Writer {
     row_position: 0,
     column_position: 0,
-    color_code: ColorCode::new(Color::LightGreen, Color::Black),
+    color_code: ColorCode::new(Color::LightGray, Color::Black),
     buffer: unsafe { Unique::new_unchecked(0xb8000 as *mut _) },
 });
 
@@ -32,7 +32,7 @@ impl Writer {
     fn write_byte(&mut self, byte: u8) {
         match byte {
             b'\n' => self.new_line(),
-            b'Q' => {
+            0x8 => { //退格键ascii
                 let row;
                 let col;
                 if self.column_position == 0{
@@ -74,7 +74,7 @@ impl Writer {
         for byte in s.bytes() {
             match byte {
                 // printable ASCII byte or newline
-                0x20...0x7e | b'\n' => self.write_byte(byte),
+                0x20..=0x7e | b'\n' | 0x8 => self.write_byte(byte),
                 // not part of printable ASCII range
                 _ => self.write_byte(0xfe),
             }

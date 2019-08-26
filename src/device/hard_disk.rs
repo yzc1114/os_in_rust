@@ -1,7 +1,3 @@
-//! ATA IO code, handling device multiplexing and IO operations
-//!
-//! Borrow from Rucore project. Thanks GWord!
-//! Port from ucore C code.
 
 pub const BLOCK_SIZE: usize = 512;
 
@@ -111,6 +107,7 @@ impl IDE {
             //     kprint!("{},", data[i]);
             // }
         }
+        kprintln!("[ OK ] IDE Driver");
     }
 
     fn select(&self, sector: u64, count: u8) {

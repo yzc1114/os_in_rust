@@ -36,12 +36,8 @@ pub fn parse_key(scancode: u8) -> Option<u8> {
     None
 }
 
-pub fn read(len: usize) {
-    let bytes = PS2_KEYBOARD.lock().read(len);
-
-    for &byte in bytes.iter() {
-        kprint!("{}", byte);
-    }
+pub fn read(len: usize) -> VecDeque<char>{
+    PS2_KEYBOARD.lock().read(len)
 }
 
 pub fn read_c() -> Option<char> {

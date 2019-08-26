@@ -74,3 +74,48 @@ pub fn yield_cpu() -> Result<(), Error> {
 
     Ok(())
 }
+
+
+pub fn get_curr_pid() -> ProcessId{
+    unsafe{
+        global_sched().get_pid()
+    }
+}
+
+pub fn sleep(ticks: u64){
+    let init_tick = unsafe { *crate::arch::tick.lock() };
+    //kprintln!("init tick: {}", init_tick);
+    loop{
+        {
+            let curr_tick = unsafe { *crate::arch::tick.lock() };
+            //kprintln!("curr tick {}", curr_tick);
+            if curr_tick - init_tick > ticks{
+                return;
+            }
+        }
+        match yield_cpu() {
+            Ok(_) => continue,
+            Err(_) => return
+        }
+    }
+}
+
+pub fn wait(pid: ProcessId){
+    //wait for pid to exit
+    let proc_ref = match global_sched().get_process(pid){
+        Ok(r) => r,
+        Err(_) => return
+    };
+    loop{
+        let state = proc_ref.read().state;
+        match state{
+            State::Free => return,
+            _ => yield_cpu().unwrap_or_default()
+        }
+    }
+}
+
+pub fn get_ticks() -> u64{
+    let ticks = unsafe { crate::arch::tick.lock() };
+    *ticks
+}

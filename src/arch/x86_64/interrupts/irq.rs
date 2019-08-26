@@ -6,6 +6,7 @@ use crate::task::scheduler::{global_sched, Scheduling};
 pub extern "x86-interrupt" fn timer(_stack_frame: &mut InterruptStackFrame) {
     pic::MASTER.lock().ack();
     global_sched().tick();
+    unsafe { *(crate::arch::tick.lock()) += 1; }
 }
 
 pub extern "x86-interrupt" fn keyboard(_stack_frame: &mut InterruptStackFrame) {
@@ -37,5 +38,5 @@ pub extern "x86-interrupt" fn com2(_stack_frame: &mut InterruptStackFrame) {
 
 pub extern "x86-interrupt" fn ide(_stack_frame: &mut InterruptStackFrame) {
     pic::SLAVE.lock().ack();
-    kprintln!("IDE interrupt");
+    //kprintln!("IDE interrupt");
 }

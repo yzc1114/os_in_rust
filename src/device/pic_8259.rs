@@ -5,14 +5,6 @@ pub static MASTER: Mutex<Pic> = Mutex::new(Pic::new(0x20));
 pub static SLAVE: Mutex<Pic> = Mutex::new(Pic::new(0xA0));
 
 pub fn init() {
-    // We need to add a delay between writes to our PICs, especially on
-    // older motherboards.  But we don't necessarily have any kind of
-    // timers yet, because most of them require interrupts.  Various
-    // older versions of Linux and other PC operating systems have
-    // worked around this by writing garbage data to port 0x80, which
-    // allegedly takes long enough to make everything work on most
-    // hardware.  Port 0x80 is used for checkpoints during POST.
-    // The Linux kernel seems to think it is free for use
     let mut wait_port: Port<u8> = Port::new(0x80);
 
     let mut write_then_wait = |mut port: Port<u8>, data: u8| {

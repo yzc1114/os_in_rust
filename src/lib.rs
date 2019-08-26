@@ -41,15 +41,24 @@ pub mod syscall;
 pub mod task;
 pub mod console;
 pub mod fs;
+pub mod demo_task;
 
 /// Main initialization process for ryzc
 pub extern "C" fn ryzc_main() {
     //device::console::clear_screen();
-    kprintln!("In main process!\n");
+    //kprintln!("In main process!\n");
 }
 
 pub extern "C" fn test_process(){
     //serial_println!("In test process!!!!\n");
+}
+
+pub extern "C" fn multi_test_process(){
+    let pid = syscall::get_curr_pid();
+    for _ in 0..20{
+        syscall::sleep(20000);
+        kprintln!("running {:?}", pid);
+    }
 }
 
 pub unsafe fn exit_qemu() {
