@@ -15,6 +15,7 @@ pub extern "C" fn console_process() {
     loop {
         #[cfg(feature = "vga")]
         {
+            kprint!("==> ");
             let line = console_get_new_line();
             let command = String::from_iter(line.into_iter());
             unsafe {
@@ -37,14 +38,21 @@ pub extern "C" fn console_process() {
 fn console_get_new_line() -> Vec<char> {
     use device::keyboard::ps2 as kbd;
     let mut line = Vec::new();
-    kprint!("==> ");
     loop {
         match kbd::read_c() {
             Some(c) => {
                 if c == '\n' {
                     kprint!("{}", c);
+                    line.push(c);
                     break line;
                 }
+                if c == 0x4 as char || c == 0x5 as char {
+                    //上下箭头
+                    kprint!("{}", c);
+                    //kprint!("{}", b'&' as u8);
+                    continue;
+                }
+
                 if c == 0x8 as char {
                     //退格
                     if line.len() > 0 {
@@ -59,6 +67,35 @@ fn console_get_new_line() -> Vec<char> {
             None => continue,
         }
     }
+}
+
+fn read_input_until_esc() -> Vec::<char> {
+    use device::keyboard::ps2 as kbd;
+    let mut content = Vec::new();
+    loop {
+        match kbd::read_c() {
+            Some(c) => {
+                if c == 0x8 as char {
+                    //退格
+                    if content.len() > 0 {
+                        content.pop();
+                        kprint!("{}", c);
+                    }
+                    continue;
+                }
+                if c == 0x1B as char{
+                    //esc
+                    if content.len() > 0{
+                        break;
+                    }
+                }
+                kprint!("{}", c);
+                content.push(c);
+            }
+            None => continue,
+        }
+    }
+    return content;
 }
 
 pub struct Command {
@@ -116,7 +153,7 @@ pub fn init() {
             }
             kprintln!(
                 "{}",
-                VFS::read_file(String::from(args[1])).unwrap_or(String::from("read file failed!"))
+                VFS::read_file(&String::from(args[1])).unwrap_or(String::from("read file failed!"))
             );
         });
         commands.add("testmultiprocess", |args| {
@@ -157,35 +194,78 @@ pub fn init() {
                 kprintln!("{}", c.name);
             }
         });
+        commands.add("test_proc_use_syscall", |_| {
+            let pid = match syscall::create(String::from("syscall"), 0, demo_task::test_syscall){
+                Ok(pid) => pid,
+                Err(_) => { 
+                    kprintln!("failed!");
+                    return;
+                }
+            };
+            syscall::wait(pid);
+        });
         commands.add("createfile", |args| {
-            if args.len() == 1 {
+            if args.len() != 2 {
                 kprintln!("should have 2 args");
                 kprintln!("2nd arg should be file name");
                 return;
             }
-            kprintln!("input content, type return twice to end input");
-            use device::keyboard::ps2 as kbd;
-            let mut content = Vec::new();
-            loop {
-                let c = kbd::read_c();
-                match c {
-                    Some(c) => {
-                        if c == 0x8 as char {
-                            content.pop();
-                        } else if c == '\n' && content.last().unwrap_or(&'\0') == &'\n' {
-                            break;
-                        } else {
-                            content.push(c);
-                            kprint!("{}", c);
-                        }
-                    }
-                    None => continue,
-                }
-            }
-            match VFS::create_file(args[1].to_string(), String::from_iter(content.into_iter())) {
+            kprintln!("input content, press esc to end");
+            let content: Vec::<char> = read_input_until_esc();
+            match VFS::create_file(&args[1].to_string(), &String::from_iter(content.into_iter())) {
                 Ok(_) => kprintln!("create success"),
                 Err(_) => kprintln!("create fail"),
             }
+        });
+        commands.add("removefile", |args| {
+            if args.len() != 2{
+                kprintln!("should have 2 args");
+                kprintln!("2nd arg should be file name");
+                return;
+            }
+
+            match VFS::remove_file(&String::from(args[1])) {
+                Ok(_) => kprintln!("remove success"),
+                Err(_) => kprintln!("remove failed")
+            }
+        });
+        commands.add("appendfile", |args|{
+            if args.len() != 2 {
+                kprintln!("should have 2 args");
+                kprintln!("2nd arg should be file name");
+                return;
+            }
+            match VFS::get_file_handle(&String::from(args[1])) {
+                Some(_) => (),
+                None => { kprintln!("file not exist!"); return; }
+            }
+            kprintln!("input content, press esc to end");
+            let content: Vec::<char> = read_input_until_esc();
+            match VFS::append_file(&args[1].to_string(), &String::from_iter(content.into_iter())) {
+                Ok(_) => kprintln!("create success"),
+                Err(_) => kprintln!("create fail"),
+            }
+        });
+        commands.add("changefilename", |args|{
+            if args.len() != 3{
+                kprintln!("should have 3 args");
+                kprintln!("2nd arg should be old file name");
+                kprintln!("3nd arg should be new file name");
+                return;
+            }
+
+            match VFS::change_file_name(&String::from(args[1]), &String::from(args[2])) {
+                Ok(_) => kprintln!("change success"),
+                Err(_) => kprintln!("change failed")
+            }
+        });
+        
+        commands.add("check_unused_blocks", |_|{
+            kprintln!("{:?}", crate::fs::UnusedBlocks::parse_bit_map_block());
+        });
+
+        commands.add("clear_screen", |_|{
+            crate::device::vga::VGA.lock().clear_screen();
         })
     }
 }

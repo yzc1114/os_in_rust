@@ -10,7 +10,7 @@ pub use self::stack_allocator::Stack;
 
 mod area_frame_allocator;
 pub mod heap;
-mod stack_allocator;
+pub mod stack_allocator;
 
 pub unsafe fn init(boot_info: &'static BootInfo) {
     let mut mapper = {

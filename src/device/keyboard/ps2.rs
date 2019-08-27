@@ -26,7 +26,9 @@ pub fn get_key_event(scancode: u64) -> Option<KeyEvent> {
 /// Get all bytes from keyboard and translate to key
 pub fn parse_key(scancode: u8) -> Option<u8> {
     let byte_sequence: u64 = retrieve_bytes(scancode);
+    //kprintln!("{:x}", byte_sequence);
     if let Some(key) = get_key(byte_sequence) {
+        //kprintln!("got {:?}", key);
         match key {
             Key::Ascii(k) => return Some(k),
             Key::Meta(modifier) => STATE.lock().update(modifier),
@@ -50,19 +52,26 @@ pub fn read_c() -> Option<char> {
 fn retrieve_bytes(scancode: u8) -> u64 {
     let mut byte_sequence: Vec<u8> = vec![scancode];
 
+    //kprintln!("retreive: {:x}", scancode);
+
     // if byte is start of sequence, start reading bytes until end of sequence
     // TODO: Design system that reads more than two bytes
     if scancode == 0xE0 || scancode == 0xE1 {
+
         let check_byte: u8 = ps2_controller_8042::key_read();
+
+        //kprintln!("check_byte, {}", check_byte);
         if let Some(byte) = is_special_key(check_byte) {
             byte_sequence.push(byte);
         }
     }
 
-    byte_sequence
+    let ret = byte_sequence
         .iter()
         .rev()
-        .fold(0, |acc, &b| (acc << 1) + b as u64)
+        .fold(0, |acc, &b| (acc << 1) + b as u64);
+    //kprintln!("got: {:x}", ret);
+    ret
 }
 
 pub struct Ps2 {
@@ -131,6 +140,7 @@ pub fn is_special_key(byte: u8) -> Option<u8> {
 
 fn match_scancode(scancode: u64) -> Option<KeyEvent> {
     let idx = scancode as usize;
+    //kprintln!("type: {:x}",scancode);
     match scancode {
         // ASCII Keys by keyboard row
         0x02...0x0D => key_press!(LowerAscii(b"1234567890-="[idx - 0x02])),
@@ -146,6 +156,8 @@ fn match_scancode(scancode: u64) -> Option<KeyEvent> {
         0x0F => key_press!(Ascii(b'\t')), // tab
         0x1C => key_press!(Ascii(b'\n')), // newline
         0x39 => key_press!(Ascii(b' ')),  // space
+        0x48 => key_press!(Ascii(0x4)),  // up arrow
+        0x50 => key_press!(Ascii(0x5)),  // down arrow
 
         // Meta keys
         0x1D => key_press!(Meta(ControlLeft(true))),

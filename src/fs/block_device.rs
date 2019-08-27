@@ -75,6 +75,7 @@ impl BlockDevice {
                 }
             }
         }
+        //kprintln!("{:?}", files);
         return Ok(files);
     }
 
@@ -112,7 +113,7 @@ impl BlockDevice {
         return UnusedBlocks::parse_bit_map_block();
     }
 
-    pub fn insert_file(name: String, content: &String) -> Result<fs::File, ()> {
+    pub fn insert_file(name: &String, content: &String) -> Result<fs::File, ()> {
         let block_count = content.len() / fs::BLOCK_SIZE + 1;
         let u8_length = content.len();
         match UnusedBlocks::get_usable_blocks_for_size(block_count) {
@@ -120,13 +121,13 @@ impl BlockDevice {
                 let block_index = unused_block.block_index;
                 let f = fs::File {
                     block_index,
-                    name,
+                    name: name.clone(),
                     block_count,
                     u8_length,
                 };
                 match BlockDevice::save_file_data(&f, content) {
                     Ok(_) => {
-                        UnusedBlocks::use_blocks(block_index, block_count).unwrap();
+                        UnusedBlocks::use_or_release_blocks(block_index, block_count, false).unwrap();
                     }
                     Err(_) => return Err(()),
                 }
@@ -134,6 +135,34 @@ impl BlockDevice {
                 Ok(f)
             }
             None => Err(()),
+        }
+    }
+
+    pub fn remove_file(name: &String) -> Result<(), ()>{
+        let old_file_handle = BlockDevice::get_file_meta_data_base_on_name(name)?;
+        match BlockDevice::change_file_meta_data(name, fs::File{
+            block_index: 0,
+            block_count: 0,
+            u8_length: 0,
+            name: name.clone()
+        }) {
+            Ok(_) => {
+                //release bitmap
+                UnusedBlocks::use_or_release_blocks(old_file_handle.block_index, old_file_handle.block_count, true)
+            },
+            Err(_) => Err(())
+        }
+    }
+
+    pub fn change_name(file_old_name: &String, file_new_name: &String) -> Result<(), ()>{
+        match BlockDevice::get_file_meta_data_base_on_name(file_old_name){
+            Ok(f) => {
+                //kprintln!("find old file meta");
+                let mut f = f;
+                f.name = file_new_name.clone();
+                BlockDevice::change_file_meta_data(file_old_name, f)
+            },
+            Err(_) => Err(())
         }
     }
 
@@ -228,7 +257,7 @@ impl BlockDevice {
         BlockDevice::write_block(bucket, &mut block[..])
     }
 
-    pub fn hash_file_name(name: &String) -> usize {
+    fn hash_file_name(name: &String) -> usize {
         let mut sum = 0;
         for c in name.chars() {
             sum += c as usize;
@@ -242,7 +271,7 @@ impl BlockDevice {
         for j in 0..META_INFO_PER_BLOCK {
             let file_meta_info: &[u8] =
                 &block[j * META_INFO_LEN..j * META_INFO_LEN + (fs::BLOCK_SIZE / META_INFO_PER_BLOCK)];
-            let file = match BlockDevice::parse_file_meta_info(file_meta_info) {
+            match BlockDevice::parse_file_meta_info(file_meta_info) {
                 Some(file) => {
                     if file.name == name.clone(){
                         return Ok(file);
@@ -253,6 +282,39 @@ impl BlockDevice {
         }
         return Err(());
 
+    }
+
+    pub fn change_file_meta_data(old_name: &String, f: fs::File) -> Result<(), ()> {
+        let meta: &mut [u8] = &mut [0; META_INFO_LEN];
+        meta[0] = (f.block_index >> 8) as u8;
+        meta[1] = f.block_index as u8;
+        meta[2] = (f.block_count >> 8) as u8;
+        meta[3] = f.block_count as u8;
+        meta[4] = (f.u8_length >> 8) as u8;
+        meta[5] = f.u8_length as u8;
+        let namebytes = f.name.as_bytes();
+        for i in 0..namebytes.len(){
+            meta[i + 6] = namebytes[i];
+        }
+        let bucket_num = BlockDevice::hash_file_name(&old_name);
+        let mut block = BlockDevice::read_block(bucket_num).unwrap();
+        //kprintln!("find old meta block");
+        for j in 0..META_INFO_PER_BLOCK {
+            let file_meta_info: &mut [u8] = &mut block
+                [j * META_INFO_LEN..j * META_INFO_LEN + (fs::BLOCK_SIZE / META_INFO_PER_BLOCK)];
+            match BlockDevice::parse_file_meta_info(file_meta_info) {
+                Some(file) => {
+                    if file.name == *old_name {
+                        for i in 0..META_INFO_LEN{
+                            file_meta_info[i] = meta[i];
+                        }
+                        return BlockDevice::write_block(bucket_num, &block[..]);
+                    }
+                }
+                None => continue,
+            };
+        }
+        return Err(());
     }
 }
 
@@ -319,7 +381,7 @@ impl UnusedBlocks {
         match UnusedBlocks::parse_bit_map_block() {
             Ok(unused) => {
                 for u in unused {
-                    if u.count > block_count {
+                    if u.count >= block_count {
                         return Some(u);
                     }
                 }
@@ -336,6 +398,24 @@ impl UnusedBlocks {
                 for i in 0..count {
                     let i: usize = (i as usize).try_into().unwrap();
                     bmap.set_2_exist(block_index + i);
+                }
+                BlockDevice::write_block(fs::UNUSED_BLOCKS_BITMAP_INDEX, &mut bmap.v)
+            }
+            Err(_) => Err(()),
+        }
+    }
+
+    pub fn use_or_release_blocks(block_index: usize, count: usize, release: bool) -> Result<(), ()> {
+        match UnusedBlocks::get_unused_bitmap_block() {
+            Ok(b) => {
+                let mut bmap = BitMap::new(b);
+                for i in 0..count {
+                    let i: usize = (i as usize).try_into().unwrap();
+                    if release{
+                        bmap.set_2_not_exist(block_index + i);
+                    }else{
+                        bmap.set_2_exist(block_index + i);
+                    }
                 }
                 BlockDevice::write_block(fs::UNUSED_BLOCKS_BITMAP_INDEX, &mut bmap.v)
             }

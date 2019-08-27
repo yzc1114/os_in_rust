@@ -46,25 +46,12 @@ impl File {
         return Ok(content);
     }
 
-    pub fn create_file(name: String, content: &String) -> Result<File, ()> {
-        match block_device::BlockDevice::insert_file(name, content) {
-            Ok(f) => {
-                //kprintln!("file created!, block_index:{}", f.block_index);
-                return Ok(f);
-            }
-            Err(_) => kprintln!("file create fail!"),
-        }
-
-        Err(())
+    pub fn rename(&self, new_name: &String) -> Result<(), ()> {
+        fs::BlockDevice::change_name(&self.name, new_name)
     }
 
-    pub fn get_file(name: &String) -> Result<File, ()>{
-        match block_device::BlockDevice::get_file_meta_data_base_on_name(&name) {
-            Ok(f) => {
-                return Ok(f);
-            },
-            Err(_) => Err(())
-        }
-
+    pub fn remove(self) -> Result<(), ()> {
+        fs::BlockDevice::remove_file(&self.name)
     }
+
 }

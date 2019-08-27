@@ -45,5 +45,17 @@ impl fmt::Debug for SyscallStack {
 
 pub extern "x86-interrupt" fn syscall(_stack_frame: &mut InterruptStackFrame) {
     kprintln!("This is a syscall!");
+    let ori_virtstackpointer: *const u64 = unsafe { _stack_frame.as_mut().stack_pointer.as_ptr() };
+    let a1 = unsafe { *(ori_virtstackpointer.offset(1)) };
+    // let rax: u64 = unsafe {
+    //     let rax;
+    //     asm!("mov %rax, $0" : "=r"(rax));
+    //     rax
+    // };
+
+    unsafe { kprintln!("a1: {}", a1 ); }
     // TODO: syscall::match_syscall(eax_register, stack_frame.rsp);
+    kprintln!("hhahahha");
+
+    unsafe { asm!("mov rax, 40;" :::: "intel", "volatile"); }
 }

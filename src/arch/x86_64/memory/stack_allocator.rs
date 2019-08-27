@@ -81,6 +81,13 @@ impl Stack {
             bottom: bottom,
         }
     }
+
+    pub const fn new_const() -> Stack{
+        Stack{
+            top: 0,
+            bottom: 4000,
+        }
+    }
 }
 
 impl Stack {
@@ -94,3 +101,4 @@ impl Stack {
         self.bottom
     }
 }
+

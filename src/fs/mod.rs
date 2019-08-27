@@ -45,7 +45,7 @@ pub fn init(){
     //kprintln!("unused_blocks: {:?}", block_device::BlockDevice::get_unused_blocks());
 
     let content = String::from("test short file");
-    match File::create_file(String::from("myfile"), &content) {
+    match VFS::create_file(&String::from("myfile"), &content) {
         Ok(f) => {
             //kprintln!("ok, f: {:?}, content:{:?}",f, f.read_content().unwrap())
         },
@@ -61,7 +61,7 @@ Heart is living in tomorrow;
 Present is dejected here:
 In a moment,passes sorrow;
 That which passes will be dear.");
-    match File::create_file(String::from("poem"), &content) {
+    match VFS::create_file(&String::from("poem"), &content) {
         Ok(f) => {
             //kprintln!("ok, file content: {}, f: {:?}, ", f.read_content().unwrap(), f);
         },

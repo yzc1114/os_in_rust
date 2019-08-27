@@ -2,6 +2,7 @@
 #![cfg_attr(not(test), no_main)]
 #![cfg_attr(test, allow(unused_imports))]
 #![feature(alloc)]
+#![feature(asm)]
 
 #[macro_use]
 extern crate ryzc;
@@ -11,11 +12,13 @@ use alloc::string::String;
 use bootloader::{bootinfo::BootInfo, entry_point};
 use core::panic::PanicInfo;
 use ryzc::{arch, device, syscall, task, console, fs};
+use ryzc::arch::memory::stack_allocator;
 
 entry_point!(kernel_main);
 
 #[cfg(not(test))]
 fn kernel_main(boot_info: &'static BootInfo) -> ! {
+
     use arch::memory::heap::{HEAP_SIZE, HEAP_START};
 
     unsafe {
