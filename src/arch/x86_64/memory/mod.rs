@@ -18,7 +18,7 @@ pub unsafe fn init(boot_info: &'static BootInfo) {
         let level_4_table = active_level_4_table(physical_memory_offset);
         let phys_to_virt = move |frame: PhysFrame| -> *mut PageTable {
             let phys = frame.start_address().as_u64();
-            let virt = VirtAddr::new(phys + physical_memory_offset);
+            let virt = VirtAddr::new(phys + physical_memory_offset); //线性偏移，将物理内存映射到虚拟内存高地址处。
             virt.as_mut_ptr()
         };
         MappedPageTable::new(level_4_table, phys_to_virt)
@@ -58,7 +58,7 @@ where
         .expect("OOM - Cannot allocate frame");
 
     unsafe {
-        mapper.map_to(page, frame, flags, frame_allocator)?.flush();
+        mapper.map_to(page, frame, flags, frame_allocator)?.flush(); //刷新TLB，保证最新的页表可用。
     }
 
     Ok(())

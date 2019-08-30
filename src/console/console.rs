@@ -266,6 +266,11 @@ pub fn init() {
 
         commands.add("clear_screen", |_|{
             crate::device::vga::VGA.lock().clear_screen();
-        })
+        });
+
+        commands.add("test_semaphore", |args|{
+            let p = syscall::create(String::from("test_semaphore"), 0, demo_task::test_semaphore).expect("error calling test_semaphore");
+            syscall::wait(p);
+        });
     }
 }

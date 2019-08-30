@@ -44,5 +44,5 @@ x86_64_context_switch:
     push [rsi] # set rflags
     popfq
 
-    # leap of faith
+    # leap of faith 信仰之跃
     ret

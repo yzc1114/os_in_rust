@@ -79,7 +79,10 @@ impl Scheduling for Preemptive {
                     self.inner.lock().proc_table.remove(pid);
                 }
                 // TODO: Handle killing of waiting process
-                State::Wait => panic!("Killing waiting processes is currently not supported"),
+                State::Wait => {
+                    self.inner.lock().proc_table.remove(pid);
+                    //panic!("Killing waiting processes is currently not supported"),
+                }
             }
 
             Ok(())

@@ -91,7 +91,6 @@ lazy_static! {
 pub fn init() {
     use x86_64::instructions::segmentation::set_cs;
     use x86_64::instructions::tables::load_tss;
-    use crate::arch::x86_64::syscall::*;
     // unsafe {
 	// 	wrmsr(IA32_EFER, rdmsr(IA32_EFER) | EFER_LMA | EFER_SCE | EFER_NXE);
 	// 	wrmsr(IA32_STAR, (0x1Bu64 << 48) | (0x08u64 << 32));

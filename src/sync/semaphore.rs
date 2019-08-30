@@ -1,6 +1,6 @@
 use alloc::collections::VecDeque;
 use core::sync::atomic::{AtomicUsize, Ordering};
-
+use core::ops::{Deref, DerefMut, Drop};
 use crate::arch::interrupts;
 use crate::syscall::error::Error;
 use crate::task::{global_sched, ProcessId, Scheduling, State};
@@ -11,6 +11,7 @@ pub struct Semaphore {
     wait_queue: VecDeque<ProcessId>,
     waiting: bool,
 }
+
 
 impl Semaphore {
     pub fn new(count: usize) -> Semaphore {

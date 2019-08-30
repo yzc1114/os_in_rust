@@ -391,20 +391,6 @@ impl UnusedBlocks {
         }
     }
 
-    pub fn use_blocks(block_index: usize, count: usize) -> Result<(), ()> {
-        match UnusedBlocks::get_unused_bitmap_block() {
-            Ok(b) => {
-                let mut bmap = BitMap::new(b);
-                for i in 0..count {
-                    let i: usize = (i as usize).try_into().unwrap();
-                    bmap.set_2_exist(block_index + i);
-                }
-                BlockDevice::write_block(fs::UNUSED_BLOCKS_BITMAP_INDEX, &mut bmap.v)
-            }
-            Err(_) => Err(()),
-        }
-    }
-
     pub fn use_or_release_blocks(block_index: usize, count: usize, release: bool) -> Result<(), ()> {
         match UnusedBlocks::get_unused_bitmap_block() {
             Ok(b) => {

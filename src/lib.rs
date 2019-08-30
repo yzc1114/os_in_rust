@@ -43,24 +43,6 @@ pub mod console;
 pub mod fs;
 pub mod demo_task;
 
-/// Main initialization process for ryzc
-pub extern "C" fn ryzc_main() {
-    //device::console::clear_screen();
-    //kprintln!("In main process!\n");
-}
-
-pub extern "C" fn test_process(){
-    //serial_println!("In test process!!!!\n");
-}
-
-pub extern "C" fn multi_test_process(){
-    let pid = syscall::get_curr_pid();
-    for _ in 0..20{
-        syscall::sleep(20000);
-        kprintln!("running {:?}", pid);
-    }
-}
-
 pub unsafe fn exit_qemu() {
     use x86_64::instructions::port::Port;
 
@@ -82,4 +64,4 @@ pub extern "C" fn eh_personality() {
 use arch::memory::heap::HeapAllocator;
 
 #[global_allocator]
-static HEAP_ALLOCATOR: HeapAllocator = HeapAllocator::new();
+pub static HEAP_ALLOCATOR: HeapAllocator = HeapAllocator::new();

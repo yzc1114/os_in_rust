@@ -8,7 +8,6 @@ pub mod idt;
 pub mod interrupts;
 pub mod memory;
 pub mod io;
-pub mod syscall;
 
 pub unsafe fn init(boot_info: &'static BootInfo) {
     for region in boot_info.memory_map.iter() {
