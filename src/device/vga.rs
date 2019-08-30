@@ -207,6 +207,8 @@ impl Writer {
             self.clear_row(row);
         }
         self.display_buffer.origin = 0;
+        self.row_position = 0;
+        self.column_position = 0;
         self.refresh();
     }
 

@@ -102,10 +102,6 @@ impl IDE {
             // ???
             let data = [0; SECTOR_SIZE];
             asm!("rep insl" :: "{dx}"(self.base + ISA_DATA), "{rdi}"(data.as_ptr()), "{cx}"(SECTOR_SIZE) : "rdi" : "volatile");
-            // kprintln!("init ide data");
-            // for i in 0..SECTOR_SIZE{
-            //     kprint!("{},", data[i]);
-            // }
         }
         kprintln!("[ OK ] IDE Driver");
     }

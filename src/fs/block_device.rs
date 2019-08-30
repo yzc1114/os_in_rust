@@ -155,6 +155,9 @@ impl BlockDevice {
     }
 
     pub fn change_name(file_old_name: &String, file_new_name: &String) -> Result<(), ()>{
+        if BlockDevice::check_file_name_exist(file_new_name){
+            return Err(());
+        }
         match BlockDevice::get_file_meta_data_base_on_name(file_old_name){
             Ok(f) => {
                 //kprintln!("find old file meta");
@@ -166,15 +169,16 @@ impl BlockDevice {
         }
     }
 
-    pub fn check_file_name_exist(f: &fs::File) -> bool {
-        let bucket_num = BlockDevice::hash_file_name(&f.name);
+    pub fn check_file_name_exist(name: &String) -> bool {
+        let name = name.clone();
+        let bucket_num = BlockDevice::hash_file_name(&name);
         let block = BlockDevice::read_block(bucket_num).unwrap();
         for j in 0..META_INFO_PER_BLOCK {
             let file_meta_info: &[u8] = &block
                 [j * META_INFO_LEN..j * META_INFO_LEN + (fs::BLOCK_SIZE / META_INFO_PER_BLOCK)];
             match BlockDevice::parse_file_meta_info(file_meta_info) {
                 Some(file) => {
-                    if file.name == f.name {
+                    if file.name == name {
                         return true;
                     }
                 }
@@ -185,7 +189,7 @@ impl BlockDevice {
     }
 
     pub fn save_file_data(f: &fs::File, content: &String) -> Result<(), ()> {
-        if BlockDevice::check_file_name_exist(&f) {
+        if BlockDevice::check_file_name_exist(&f.name) {
             return Err(());
         }
         //1. save content first
